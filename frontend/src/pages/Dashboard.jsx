@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 const Dashboard = () => {
@@ -12,12 +12,11 @@ const Dashboard = () => {
       try {
         const response = await fetch("http://localhost:3001/user/user-info", {
           method: "GET",
-          credentials: "include", // Send cookies with the request
+          credentials: "include",
         });
 
         if (response.ok) {
           const userData = await response.json();
-          console.log("User data:", userData);
           
           setUser(userData);
         } else {

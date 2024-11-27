@@ -1,11 +1,7 @@
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
-const jwt = require("jsonwebtoken");
-
-const { cleanUpExpiredSessions } = require("../services/sessionService");
-
-const JWT_SECRET = "secret";
-const generateSessionId = (name) => name.replace(/\s+/g, "") + "123";
+const { hashPassword, verifyPassword, generateToken } = require("../utils/authUtils");
+const { setCookie, clearCookie } = require("../utils/cookieUtils");
 
 // Signup controller
 exports.signup = async (req, res) => {
@@ -18,22 +14,21 @@ exports.signup = async (req, res) => {
   try {
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({ where: { email } });
-    console.log(existingUser);
     if (existingUser) {
-      return res
-        .status(400)
-        .json({ error: "User already exists with this email." });
+      return res.status(400).json({ error: "User already exists with this email." });
     }
+
+    // Hash password before storing
+    const hashedPassword = await hashPassword(password);
 
     // Create the user
     const user = await prisma.user.create({
-      data: { email, phone, name, password },
+      data: { email, phone, name, password: hashedPassword },
     });
 
-    res
-      .status(201)
-      .json({ message: "User registered successfully.", userId: user.id });
+    res.status(201).json({ message: "User registered successfully.", userId: user.id });
   } catch (error) {
+    console.error("Signup error:", error);
     res.status(500).json({ error: "Failed to register user." });
   }
 };
@@ -47,19 +42,20 @@ exports.login = async (req, res) => {
   }
 
   try {
-    await cleanUpExpiredSessions();
-
     const user = await prisma.user.findUnique({ where: { email } });
-    if (!user || user.password !== password) {
+
+    // Validate user and password
+    if (!user || !(await verifyPassword(password, user.password))) {
       return res.status(401).json({ error: "Invalid email or password." });
     }
 
-    const sessionId = generateSessionId(user.name);
+    // Generate a unique session ID (optional enhancement)
+    const sessionId = crypto.randomUUID();
 
-    // Set session expiration time
-    const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+    // Create session expiration time
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
-    // Create the session in the database
+    // Store session in the database
     await prisma.session.create({
       data: {
         sessionId,
@@ -68,70 +64,41 @@ exports.login = async (req, res) => {
       },
     });
 
-    // Create a JWT token
-    const token = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, {
-      algorithm: "HS256",
-      expiresIn: "1y",
-    });
+    // Create JWT token
+    const token = generateToken({ userId: user.id, role: user.role });
 
-    // Set the cookie with the JWT token
-    res.cookie("SESSION_ID", sessionId, {
-      httpOnly: false,
-      secure: false,
-      maxAge: 60 * 60 * 1000, 
-    });
+    // Set secure cookie with session ID
+    setCookie(res, "SESSION_ID", sessionId, { maxAge: 60 * 60 * 1000 });
 
-    res.status(200).json({ message: "Login successful.", token }); // Send token back to client
+    res.status(200).json({ message: "Login successful.", token });
   } catch (error) {
+    console.error("Login error:", error);
     res.status(500).json({ error: "Failed to log in." });
   }
 };
 
+// Logout controller
 exports.logout = async (req, res) => {
-  const sessionId = req.cookies.SESSION_ID;
+  const sessionId = req.cookies?.SESSION_ID; 
 
   try {
-    // Delete the session from the database
+    // Remove the session from the database
     await prisma.session.delete({
       where: { sessionId },
     });
 
-    // Clear the cookie on the client side
-    res.clearCookie("SESSION_ID");
+    // Clear the session cookie
+    clearCookie(res, "SESSION_ID");
 
     res.status(200).json({ message: "Logged out successfully." });
   } catch (error) {
-    res.status(404).json({ error: "Session not found or already expired." });
-  }
-};
+    console.error("Logout error:", error);
 
-exports.getUserInfo = async (req, res) => {
-  const sessionId = req.cookies.SESSION_ID;
-
-  if (!sessionId) {
-    return res
-      .status(401)
-      .json({ error: "Unauthorized. Session ID not provided." });
-  }
-
-  try {
-    // Find the session in the database
-    const session = await prisma.session.findUnique({
-      where: { sessionId },
-      include: {
-        user: true, // Include user details
-      },
-    });
-
-    if (!session || session.expiresAt < new Date()) {
-      return res.status(401).json({ error: "Session expired or invalid." });
+    // Handle case where session ID does not exist in the database
+    if (error.code === "P2025") {
+      return res.status(404).json({ error: "Session not found." });
     }
 
-    // Return the user's information
-    const { name, email, phone } = session.user;
-    res.status(200).json({ name, email, phone });
-  } catch (error) {
-    console.error("Error retrieving user info:", error);
-    res.status(500).json({ error: "Failed to retrieve user information." });
+    res.status(500).json({ error: "Failed to log out." });
   }
 };
