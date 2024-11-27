@@ -3,9 +3,7 @@ const jwt = require("jsonwebtoken");
 const JWT_SECRET = "secret";
 
 const verifyJwt = (req, res, next) => {
-  console.log("header:", req.headers);
-  const token = req.headers["authorization"]?.split(" ")[1]; // Check for token in cookie or Authorization header
-  console.log("Token:", token);
+  const token = req.headers["authorization"]?.split(" ")[1];
   
   if (!token) {
     return res.status(401).json({ error: "Unauthorized. Token not provided." });
