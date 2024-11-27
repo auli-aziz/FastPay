@@ -22,16 +22,26 @@ const App = () => {
       <Routes>
         {/* Redirect root to login */}
         <Route path="/" element={<Navigate to="/login" replace />} />
-
+        
         {/* Public routes */}
-        <Route path="/login" element={<Login />} />
+        <Route path="/login" element={
+            !isAuthenticated() ? (
+              <Login />
+            ) : (
+              <Navigate to="/dashboard" replace />
+            )
+          } />
         <Route path="/signup" element={<Signup />} />
 
         {/* Protected route for the dashboard */}
         <Route
           path="/dashboard"
           element={
-            isAuthenticated() ? <Dashboard /> : <Navigate to="/login" replace />
+            isAuthenticated() ? (
+              <Dashboard />
+            ) : (
+              <Navigate to="/login" replace />
+            )
           }
         />
       </Routes>

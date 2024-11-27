@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const morgan = require('morgan');
 const cors = require('cors');
 const authRoutes = require('./routes/authRoutes');
+const userRoutes = require('./routes/userRoutes');
 
 const app = express();
 const PORT = 3001;
@@ -68,5 +69,6 @@ app.use(cors({
 // });
 
 app.use('/auth', authRoutes);
+app.use('/user', userRoutes);
 
 app.listen(PORT, () => console.log(`Server running on ${PORT}...`));
