@@ -1,8 +1,10 @@
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
+const jwt = require("jsonwebtoken");
+
 const { cleanUpExpiredSessions } = require("../services/sessionService");
 
-// Weak session ID generator
+const JWT_SECRET = "secret";
 const generateSessionId = (name) => name.replace(/\s+/g, "") + "123";
 
 // Signup controller
@@ -55,7 +57,7 @@ exports.login = async (req, res) => {
     const sessionId = generateSessionId(user.name);
 
     // Set session expiration time
-    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // Set expiry to 1 hour from now
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
 
     // Create the session in the database
     await prisma.session.create({
@@ -66,15 +68,20 @@ exports.login = async (req, res) => {
       },
     });
 
-    // Set the cookie with the expiration
+    // Create a JWT token
+    const token = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, {
+      algorithm: "HS256",
+      expiresIn: "1y",
+    });
+
+    // Set the cookie with the JWT token
     res.cookie("SESSION_ID", sessionId, {
-      httpOnly: true,
-      httpOnly: false, 
-      secure: false, 
+      httpOnly: false,
+      secure: false,
       maxAge: 60 * 60 * 1000, 
     });
 
-    res.status(200).json({ message: "Login successful.", sessionId });
+    res.status(200).json({ message: "Login successful.", token }); // Send token back to client
   } catch (error) {
     res.status(500).json({ error: "Failed to log in." });
   }
@@ -102,7 +109,9 @@ exports.getUserInfo = async (req, res) => {
   const sessionId = req.cookies.SESSION_ID;
 
   if (!sessionId) {
-    return res.status(401).json({ error: "Unauthorized. Session ID not provided." });
+    return res
+      .status(401)
+      .json({ error: "Unauthorized. Session ID not provided." });
   }
 
   try {

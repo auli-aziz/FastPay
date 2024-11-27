@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 const Dashboard = () => {
   const [user, setUser] = useState(null); 
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null); 
+  const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchUserInfo = async () => {
@@ -15,6 +17,8 @@ const Dashboard = () => {
 
         if (response.ok) {
           const userData = await response.json();
+          console.log("User data:", userData);
+          
           setUser(userData);
         } else {
           throw new Error("Failed to fetch user information.");
@@ -75,6 +79,14 @@ const Dashboard = () => {
         <p className="text-gray-600 mb-2">
           <strong>Phone:</strong> {user.phone}
         </p>
+        {user.role && user.role == "admin" && (
+          <button
+          onClick={() => navigate("/admin")}
+          className="mt-4 mr-4 bg-green-500 text-white py-2 px-4 rounded-lg hover:bg-green-600 transition duration-300"
+        >
+          Admin Dashboard
+        </button>
+        )}
         <button
           onClick={handleLogout}
           className="mt-4 bg-red-500 text-white py-2 px-4 rounded-lg hover:bg-red-600 transition duration-300"

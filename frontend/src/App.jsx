@@ -9,11 +9,13 @@ import Cookies from "js-cookie"; // For handling cookies
 import Login from "./pages/Login"; // Ensure proper imports
 import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
+import AdminDashboard from "./pages/AdminDashboard";
 
 const App = () => {
   // Authentication check using cookies
   const isAuthenticated = () => {
     const sessionId = Cookies.get("SESSION_ID");
+    console.log("Session ID:", sessionId);
     return sessionId && sessionId !== "expired";
   };
 
@@ -32,13 +34,21 @@ const App = () => {
             )
           } />
         <Route path="/signup" element={<Signup />} />
-
-        {/* Protected route for the dashboard */}
         <Route
           path="/dashboard"
           element={
             isAuthenticated() ? (
               <Dashboard />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/admin"
+          element={
+            isAuthenticated() ? (
+              <AdminDashboard />
             ) : (
               <Navigate to="/login" replace />
             )

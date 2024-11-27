@@ -1,13 +1,11 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
 
 const Login = () => {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   });
-
-  const navigate = useNavigate(); // Initialize useNavigate for redirection
 
   const handleChange = (e) => {
     const { id, value } = e.target;
@@ -33,8 +31,7 @@ const Login = () => {
         const data = await response.json();
         console.log('Login successful:', data);
 
-        // Redirect to the dashboard
-        // navigate('/dashboard');
+        localStorage.setItem('token', data.token);
         window.location.href = '/dashboard';
       } else {
         const errorData = await response.json();
@@ -88,7 +85,7 @@ const Login = () => {
           </button>
         </form>
         <p className="text-sm text-center text-gray-600 mt-4">
-          Don't have an account?{' '}
+          Don&apos;t have an account?{' '}
           <Link to="/signup" className="text-blue-500 hover:underline">
             Sign up
           </Link>
