@@ -22,7 +22,7 @@ const App = () => {
       <Routes>
         {/* Redirect root to login */}
         <Route path="/" element={<Navigate to="/login" replace />} />
-        
+
         {/* Public routes */}
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
@@ -31,11 +31,7 @@ const App = () => {
         <Route
           path="/dashboard"
           element={
-            isAuthenticated() ? (
-              <Dashboard />
-            ) : (
-              <Navigate to="/login" replace />
-            )
+            isAuthenticated() ? <Dashboard /> : <Navigate to="/login" replace />
           }
         />
       </Routes>
