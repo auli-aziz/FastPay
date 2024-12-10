@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
 const Signup = () => {
@@ -8,6 +8,9 @@ const Signup = () => {
     phone: '',
     password: '',
   });
+  const [isSignupSuccessful, setIsSignupSuccessful] = useState(false); 
+  const [isError, setIsError] = useState(false); 
+  const [error, setError] = useState("");
 
   const handleChange = (e) => {
     const { id, value } = e.target;
@@ -29,17 +32,24 @@ const Signup = () => {
       });
 
       if (response.ok) {
-        const data = await response.json();
-        console.log('Signup successful:', data);
-        // Handle successful signup (e.g., redirect to login page)
+        setIsError(false);
+        setIsSignupSuccessful(true); 
+        setFormData({
+          name: '',
+          email: '',
+          phone: '',
+          password: '',
+        });
       } else {
+        setIsError(true);
+        setIsSignupSuccessful(false);
         const errorData = await response.json();
         console.error('Signup failed:', errorData);
-        // Handle errors (e.g., show error messages)
+        setError(errorData.error);
       }
     } catch (error) {
+      setIsSignupSuccessful(false);
       console.error('Error during signup:', error);
-      // Handle network or unexpected errors
     }
   };
 
@@ -47,6 +57,16 @@ const Signup = () => {
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
         <h2 className="text-2xl font-bold text-center mb-6 text-gray-700">Sign Up</h2>
+        {isSignupSuccessful && (
+          <div className="mb-4 p-4 bg-green-100 text-green-700 rounded-lg">
+            Signup successful! You can now <Link to="/login" className="text-blue-500 hover:underline">Log In</Link>.
+          </div>
+        )}
+        {isError && (
+          <div className="mb-4 p-4 bg-red-100 text-red-700 rounded-lg">
+            Signup failed! {error}
+          </div>
+        )}
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
             <label htmlFor="name" className="block text-sm font-medium text-gray-600">

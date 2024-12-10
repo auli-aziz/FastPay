@@ -16,9 +16,7 @@ const Dashboard = () => {
         });
 
         if (response.ok) {
-          const userData = await response.json();
-          console.log("User data:", userData);
-          
+          const userData = await response.json();          
           setUser(userData);
         } else {
           throw new Error("Failed to fetch user information.");

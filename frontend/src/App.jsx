@@ -15,7 +15,6 @@ const App = () => {
   // Authentication check using cookies
   const isAuthenticated = () => {
     const sessionId = Cookies.get("SESSION_ID");
-    console.log("Session ID:", sessionId);
     return sessionId && sessionId !== "expired";
   };
 
